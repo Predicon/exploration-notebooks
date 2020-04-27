@@ -1,0 +1,6 @@
+Dockerfile
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+*_rough*
+**/*_rough*
+*.csv
