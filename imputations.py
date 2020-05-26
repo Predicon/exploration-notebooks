@@ -37,21 +37,22 @@ def dti_outlier_treat(x):
         return x
 
 
-def clean_bankapp_feat(df_bankapp):
-    """Imputes nulls and cleans all the features from the bankapp database
+def impute(df, col, strategy):
+    """Imputes nulls from the passed dataframe
 
     Args:
-    parameters : df_bankapp(pandas df)
-    -------
-    returns : pandas df with a cleaner version of bankapp dataset.
+    col (string)
+    df (pandas df)
+    strategy (string)
+ 
+    returns : pandas df with an imputed version of the dataframe passed.
     """
-    #direct_deposit
     
-    df_bankapp['in1_is_direct_deposite'] = df_bankapp['in1_is_direct_deposite'].fillna(df_bankapp['in1_is_direct_deposite'].mode(dropna = True).iloc[0])
-    #dti
-    df_bankapp['dti_percentage'] = df_bankapp['dti_percentage'].fillna(df_bankapp['dti_percentage'].median(skipna = True))
-    #pds_history
-    df_bankapp['is_pds_history_found'] = df_bankapp['is_pds_history_found'].fillna(df_bankapp['is_pds_history_found'].mode(dropna = True).iloc[0])
-    #pay_day_test_result_amount
-    df_bankapp['pay_day_test_result_amount'] = df_bankapp['pay_day_test_result_amount'].fillna(df_bankapp['pay_day_test_result_amount'].median(skipna = True))
-    return df_bankapp
+    if strategy == 'mode':
+        df[col] = df[col].fillna(df[col].mode(dropna = True).iloc[0])
+    elif strategy == 'median':
+        df[col] = df[col].fillna(df[col].median(skipna = True))
+    elif strategy == 'mean':
+        df[col] = df[col].fillna(df[col].mean(skipna = True))
+    
+    return df
