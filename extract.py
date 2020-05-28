@@ -30,7 +30,7 @@ def fetch_bank_app_loans(start,end):
                   on l.loan_id = lv.loan_id
                   where campaign like '%Production%'
                   and STR_TO_DATE(entered_date ,'%m/%d/%Y') >= STR_TO_DATE({start},'%Y-%m-%d')
-                  and STR_TO_DATE(entered_date ,'%m/%d/%Y') < STR_TO_DATE({end},'%Y-%m-%d')
+                  and STR_TO_DATE(entered_date ,'%m/%d/%Y') <= STR_TO_DATE({end},'%Y-%m-%d')
                '''
     bank_app_conn = get_bank_app_conn()
     
@@ -126,3 +126,67 @@ def get_examples(start_date,end_date):
     df = pd.merge(df_funded_mature_loans,df_BV_loans,how = 'inner',left_on = 'LoanId',right_on = 'loan_id')
     df = df.drop('loan_id',axis = 1)
     return df
+
+def fetch_imputation_examples_bankapp(start_date, end_date):
+    """Get bankapp features for imputing missing data
+
+    Args:
+    start (str): Start date
+    end: (str): End date
+
+    Returns:
+    df (pandas df): DataFrame with all bankapp features
+    """
+    
+    start_date = "'" + start_date + "'"
+    end_date = "'" + end_date + "'"
+    
+    query =   f'''select 
+                  l.loan_id,
+                  l.entered_date,
+                  lv.dti_percentage,
+                  lv.in1_is_direct_deposite,
+                  lv.pay_day_test_result_amount,
+                  lv.is_pds_history_found
+
+                  from loan l
+                  LEFT JOIN loan_view_table lv 
+                  on l.loan_id = lv.loan_id
+                  where campaign like '%Production%'
+                  and STR_TO_DATE(entered_date ,'%m/%d/%Y') >= STR_TO_DATE({start_date},'%Y-%m-%d')
+                  and STR_TO_DATE(entered_date ,'%m/%d/%Y') <= STR_TO_DATE({end_date},'%Y-%m-%d')
+               '''
+    bank_app_conn = get_bank_app_conn()
+    
+    df = pd.read_sql_query(query, con = bank_app_conn)
+    df = df.drop_duplicates('loan_id')
+    return df.drop(['loan_id', 'entered_date'], axis = 1)
+
+def fetch_imputation_examples_esign(start_date,end_date):
+    """Get Esign time difference for imputation
+
+    Args:
+    start (str): Start date
+    end: (str): End date
+
+    Returns:
+    df (pandas df): DataFrame with esign time difference(sec)
+    """
+    
+    start_date = "'" + start_date + "'"
+    end_date = "'" + end_date + "'"
+    
+    query = f'''SELECT LN.LoanId,
+                       ESIG.EsigTimeSignedDiff_In_SEC
+                FROM view_FCL_Loan LN
+                LEFT JOIN view_FCL_EsignatureCustomerData ESIG ON LN.LoanId = ESIG.LoanId
+                WHERE LN.OriginationDate >= {start_date} 
+                and LN.OriginationDate <= {end_date}
+                and LN.IsFirstDefault IS NOT NULL
+                and LN.MerchantId IN (15, 18) 
+            '''
+    
+    iloans_conn = get_iloans_conn()
+    df = pd.read_sql_query(query,con=iloans_conn)
+    df = df.drop_duplicates('LoanId')
+    return df.drop('LoanId', axis = 1)

@@ -1,6 +1,8 @@
 #importing useful libraries
 import numpy as np
 import pandas as pd
+from sklearn.impute import SimpleImputer
+from sklearn_pandas import CategoricalImputer
 
 def esisgn_outlier_treat(x):
     """Removes outliers 
@@ -37,22 +39,31 @@ def dti_outlier_treat(x):
         return x
 
 
-def impute(df, col, strategy):
-    """Imputes nulls from the passed dataframe
+def impute(df, cols, strategy):
+    """Imputes nulls for the specified columns from the passed dataframe, startegy must be same for all  the cols passed. For mode, only single column is accepted.
 
     Args:
-    col (string)
-    df (pandas df)
-    strategy (string)
+    col (list): list of columns to be transformed
+    df (pandas df): dataframe containing the columns
+    strategy (string): how to impute
  
-    returns : pandas df with an imputed version of the dataframe passed.
+    returns : Imputes learned object.
     """
     
-    if strategy == 'mode':
-        df[col] = df[col].fillna(df[col].mode(dropna = True).iloc[0])
-    elif strategy == 'median':
-        df[col] = df[col].fillna(df[col].median(skipna = True))
-    elif strategy == 'mean':
-        df[col] = df[col].fillna(df[col].mean(skipna = True))
+    imp_mean = SimpleImputer(missing_values = np.nan, strategy = 'mean')
+    imp_median = SimpleImputer(missing_values = np.nan, strategy = 'median')
+    imp_mode = CategoricalImputer(missing_values = np.nan, strategy = 'most_frequent')
     
-    return df
+    if strategy == 'mean':
+        imp_mean.fit(df[cols])
+        return imp_mean
+    elif strategy == 'median':
+        imp_median.fit(df[cols])
+        return imp_median
+    elif strategy == 'most_frequent':
+        imp_mode.fit(df[cols])
+        return imp_mode
+    else:
+        return("Invalid strategy: enter one of the startegies among mean, median and most_frequent")
+    
+
