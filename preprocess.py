@@ -4,55 +4,15 @@ import joblib
 import re
 import json
 
-def get_primary_account(bankreport):
-    """
-    Flag primary checking account (account having max transaction count)
-    
-    Args:
-    bankreport (json)
-    loanid (str)
-    
-    Returns:
-    account number (str) : account number of primary account
-    """
-    df_txn = fetch_checking_acct_txns(bankreport)
-    if df_txn.empty is False:
-        df_txns_count = df_txn['account_number'].value_counts()
-        return df_txns_count.idxmax()
+def preprocess_iloans(df):
+    df['Campaign'] = df['Campaign'].str.lower()
+    df['LoanId'] = df['LoanId'].astype(int).astype(str)
+    return df
 
+def preprocess_bank_reports(df):
+    df = df.drop_duplicates('LoanId')
+    return df
 
-def get_transaction_days_count(primary_account,bank_report):
-    """Checks if number of transaction days >=60 given an account
-    
-    Args:
-    primary_account (str): Account number of primary account
-    bank_report (str): bank report string
-
-    Returns:
-    True or False (bool)
-    """ 
-    df_checking_txns = fetch_checking_acct_txns(bank_report)
-    if df_checking_txns.empty is False:
-        df_primary_account_txns = df_checking_txns[df_checking_txns['account_number']==primary_account]
-        df_primary_account_txns= df_primary_account_txns.sort_values(by='posted_date')
-        first_txn_date = df_primary_account_txns['posted_date'].iloc[0]
-        last_txn_date = df_primary_account_txns['posted_date'].iloc[-1]
-        txn_days_count = (last_txn_date - first_txn_date).days
-        return txn_days_count >= 60
-
-def calculate_age(current_date, dob):
-    """Calculates age in years
-    
-    Args:
-    current_date (pandas datetime object)
-    dob (pandas datetime object): Date of Birth
-
-    Returns:
-    age (int): Age in years
-    """
-    
-    age = len(pd.date_range(start=dob,end=current_date,freq='Y'))
-    return age
 
 def create_lender_vars(loanid,report_string,time_added,pr_acct):
     """Compute lender variables from primary account transactions

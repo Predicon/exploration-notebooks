@@ -43,8 +43,9 @@ def fetch_funded_mature_loans(start,end):
     """Fetch funded loans between given dates.
     
     Args:
-    start (str): Start date
-    end: (str): End date
+    start (str): Start date, 
+    end: (str): End date 
+    example: "'2019-01-01'"
     
     Returns:
     df (dataframe): contains required columns from iloans
@@ -53,8 +54,6 @@ def fetch_funded_mature_loans(start,end):
     query = f'''select LN.LoanId,
                        LC.LoanCount,
                        LN.OriginationDate,
-                       GC.BankReportData,
-                       GC.TimeAdded as ReportTimeAdded,
                        LN.Campaign,
                        LN.MonthlyGrossIncome,
                        LN.DateOfBirth,
@@ -62,6 +61,39 @@ def fetch_funded_mature_loans(start,end):
                        
                 from view_FCL_Loan LN
                 LEFT JOIN view_FCL_CustomerLoanCount LC ON LC.CustomerId = LN.CustomerId
+                
+                
+                
+                where LN.OriginationDate >= {start}
+                and LN.OriginationDate <= {end} 
+                and LN.IsFirstDefault IS NOT NULL
+                and LN.MerchantId IN (15, 18)
+               ''' 
+    iloans_conn = get_iloans_conn()
+    df = pd.read_sql_query(query,con = iloans_conn)
+    
+    return df
+
+
+def fetch_bank_reports(start,end):
+    """Fetch bank reports between given dates.
+    
+    Args:
+    start (str): Start date
+    end: (str): End date
+    example: "'2019-01-01'"
+    
+    Returns:
+    df (dataframe): contains bank report json strings
+    """
+    
+    query = f'''select LN.LoanId,
+                       LN.OriginationDate,
+                       GC.BankReportData,
+                       GC.TimeAdded as ReportTimeAdded
+                       
+                       
+                from view_FCL_Loan LN
                 LEFT JOIN view_FCL_GetCreditDataLoan GCD ON LN.LoanId = GCD.LoanId
                 LEFT JOIN view_FCL_GetCreditData GC ON GC.BankTransactionId = GCD.BankTransactionId
                 
@@ -73,8 +105,7 @@ def fetch_funded_mature_loans(start,end):
                 and GC.ReportStatus = 'COMPLETE' '''
     iloans_conn = get_iloans_conn()
     df = pd.read_sql_query(query,con = iloans_conn)
-    df = df.drop_duplicates('LoanId')
-    df['LoanId'] = df['LoanId'].astype(int).astype(str)
+    
     return df
 
 
