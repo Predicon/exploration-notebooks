@@ -7,6 +7,7 @@ import json
 def preprocess_iloans(df):
     df['Campaign'] = df['Campaign'].str.lower()
     df['LoanId'] = df['LoanId'].astype(int).astype(str)
+    
     return df
 
 def preprocess_bank_reports(df):
