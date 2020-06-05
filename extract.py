@@ -1,6 +1,7 @@
 import sys
 import os
 import pandas as pd
+import joblib
 
 sys.path.insert(0,os.getcwd())
 from db_utils import *

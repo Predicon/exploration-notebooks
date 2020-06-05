@@ -78,12 +78,13 @@ lead_provider_list = [
 
 
 def fe_iloans(df):
+    
     df['Age'] = df.apply(lambda x: calculate_age(x['OriginationDate'],x['DateOfBirth']), axis = 1)
     
     
     lead_providers = [provider.lower() for provider in lead_provider_list]
     df['LeadProvider'] = df['Campaign'].str.extract("(" + "|".join(lead_providers) +")")
-
+    
     return df
 
 def create_lender_vars(loanid,report_string,time_added,pr_acct):
@@ -100,7 +101,7 @@ def create_lender_vars(loanid,report_string,time_added,pr_acct):
     """
 
     lender_vars = dict()   
-    lender_vars['LoanId'] = loanid
+    lender_vars['loan_id'] = loanid
     lender_vars['LenderAmountDeb'] = 0.0
     lender_vars['LenderCountCred'] = 0.0
     lender_vars['LenderAmountCred30'] = 0.0
@@ -165,11 +166,11 @@ def fe_bank_reports(df):
     
     df_lender_vars = pd.DataFrame()
     with mp.Pool(processes=NCPU) as pool:
-        df_lender_vars_temp = pool.starmap(create_lender_vars, zip(df['LoanId'],df['BankReportData'],df['ReportTimeAdded'],df['primary_account']))
+        df_lender_vars_temp = pool.starmap(create_lender_vars, zip(df['loan_id'],df['BankReportData'],df['ReportTimeAdded'],df['primary_account']))
     df_lender_vars=pd.concat(df_lender_vars_temp,ignore_index=True)
 
     df_lender_vars.reset_index(drop=True,inplace=True)
-    df = pd.merge(df,df_lender_vars,how='left',on='LoanId')
+    df = pd.merge(df,df_lender_vars,how='left',on='loan_id')
 
     return df
 
