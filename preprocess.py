@@ -138,3 +138,25 @@ def gc_summary_vars(loanid, bank_report_string, primary_acct):
     df_gc_vars.reset_index(drop = True, inplace = True)
     df_gc_vars['LoanId'] = loanid
     return df_gc_vars
+
+def create_balance_vars(loanid,report_string,pr_acct):
+    """Difference between positive and negative balance days
+
+    Args:
+    loanid (int) : LoanId
+    bank_report_string (str): bank report
+    primary_account (str): Primary checking account
+
+    Returns:
+    list : conatains LoanId and respective differences bewteen positive ans negative transaction days
+    """
+    df_checking_txns = fetch_checking_acct_txns(report_string)
+    df_pr_acct_txns = df_checking_txns[df_checking_txns['account_number']==pr_acct]
+    df_daily_closing_balance = df_pr_acct_txns.groupby('posted_date', as_index = False)['balance'].first()
+    df_daily_closing_balance['posted_date'] = pd.to_datetime(df_daily_closing_balance['posted_date'])
+    df_daily_closing_balance.set_index('posted_date', inplace = True)
+    df_daily_closing_balance_resampled = df_daily_closing_balance.asfreq('D')
+    df_daily_closing_balance_resampled = df_daily_closing_balance_resampled.fillna(method = 'ffill')
+    pos = df_daily_closing_balance_resampled[df_daily_closing_balance_resampled['balance'] > 0].shape[0]
+    neg = df_daily_closing_balance_resampled[df_daily_closing_balance_resampled['balance'] <= 0].shape[0]
+    return [loanid, pos - neg]
