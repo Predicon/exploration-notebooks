@@ -67,3 +67,19 @@ def impute(df, cols, strategy):
         return("Invalid strategy: enter one of the startegies among mean, median and most_frequent")
     
 
+def iloans_impute(df):
+    df['LeadProvider'].fillna('Freedom', inplace = True)
+    return df
+
+def impute_esign(df):
+    imp_acc_count = impute(df, ['AccessCount'], 'median')
+    df[['AccessCount']] = imp_acc_count.transform(df[['AccessCount']])
+    return df, imp_acc_count
+
+def impute_bankapp(df):
+    imp_dti = impute(df, ['dti'], 'median')
+    imp_pay_day = impute(df, ['pay_day_test_result_amount'], 'median')
+    df[['dti']] = imp_dti.transform(df[['dti']])
+    df[['pay_day_test_result_amount']] = imp_pay_day.transform(df[['pay_day_test_result_amount']])
+    return df, imp_dti, imp_pay_day
+

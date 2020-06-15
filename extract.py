@@ -17,7 +17,7 @@ def fetch_bank_app_loans(start,end):
     Returns:
     df (dataframe): contains required columns with loan id and decisions
     """
-    query =   f'''select l.loan_id, 
+    query =   f'''select l.loan_id,
                   l.final_decision,
                   l.reasons_for_decision,
                   l.entered_date,
@@ -89,7 +89,6 @@ def fetch_bank_reports(start,end):
     """
     
     query = f'''select LN.LoanId,
-                       LN.OriginationDate,
                        GC.BankReportData,
                        GC.TimeAdded as ReportTimeAdded
                        
@@ -134,7 +133,6 @@ def get_esign_time_diff(start,end):
     
     iloans_conn = get_iloans_conn()
     df = pd.read_sql_query(query,con=iloans_conn)
-    df['LoanId'] = df['LoanId'].astype(int).astype(str)
     return df
 
 
