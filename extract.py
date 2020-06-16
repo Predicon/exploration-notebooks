@@ -4,6 +4,8 @@ import pandas as pd
 import joblib
 
 sys.path.insert(0,os.getcwd())
+sys.path.insert(0,'/home/shared/utils')
+
 from db_utils import *
 
 
