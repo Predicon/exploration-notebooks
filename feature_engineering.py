@@ -85,7 +85,8 @@ def fe_iloans(df):
     
     lead_providers = [provider.lower() for provider in lead_provider_list]
     df['LeadProvider'] = df.loc[df['Campaign'].notnull(), 'Campaign'].str.extract("(" + "|".join(lead_providers) +")")
-    df.replace({'LeadProvider': {'Roundsky': 'RoundSky'}}, inplace = True)
+
+    df['Reloan'] = df['LoanCount'].apply(lambda x:True if x>1 else False)
     
     return df
 
@@ -173,23 +174,53 @@ def daily_txn_summary(primary_account, bank_report, loan_id):
     #setting into dataframe
     df_final = pd.concat([df_debit_amount, df_credit_amount, df_credit_count, df_debit_count, df_balance], axis = 1, verify_integrity = True, ignore_index = True)
     df_final.rename(columns = {0 : 'debit_amt',
-                                1 : 'credit_amt',
-                                2 : 'credit_count',
-                                3 : 'debit_count',
-                                4 : 'balance'}, inplace = True)
+                               1 : 'credit_amt',
+                               2 : 'credit_count',
+                               3 : 'debit_count',
+                               4 : 'balance'}, inplace = True)
     df_final.fillna(0.0, inplace = True)
+    #daily_avg_stats
     avg_daily_debit = df_final['debit_amt'].resample('D').sum().mean()
     avg_daily_credit = df_final['credit_amt'].resample('D').sum().mean()
     avg_daily_debit_count = int(df_final['debit_count'].resample('D').sum().mean())
     avg_daily_credit_count = int(df_final['credit_count'].resample('D').sum().mean())
     avg_daily_balance = df_final['balance'].resample('D').sum().mean()
+    #daily_median_stats
+    median_daily_debit = df_final['debit_amt'].resample('D').sum().median()
+    median_daily_credit = df_final['credit_amt'].resample('D').sum().median()
+    median_daily_debit_count = int(df_final['debit_count'].resample('D').sum().median())
+    median_daily_credit_count = int(df_final['credit_count'].resample('D').sum().median())
+    median_daily_balance = df_final['balance'].resample('D').sum().median()
+    #daily_dev_stats
+    dev_daily_debit = df_final['debit_amt'].resample('D').sum().std()
+    dev_daily_credit = df_final['credit_amt'].resample('D').sum().std()
+    dev_daily_debit_count = int(df_final['debit_count'].resample('D').sum().std())
+    dev_daily_credit_count = int(df_final['credit_count'].resample('D').sum().std())
+    dev_daily_balance = df_final['balance'].resample('D').sum().std()
+    #weekly_avg_stats
     avg_weekly_debit = df_final['debit_amt'].resample('W').sum().mean()
     avg_weekly_credit = df_final['credit_amt'].resample('W').sum().mean()
     avg_weekly_debit_count = int(df_final['debit_count'].resample('W').sum().mean())
     avg_weekly_credit_count = int(df_final['credit_count'].resample('W').sum().mean())
     avg_weekly_balance = df_final['balance'].resample('W').sum().mean()
+    #weekly_median_stats
+    median_weekly_debit = df_final['debit_amt'].resample('W').sum().median()
+    median_weekly_credit = df_final['credit_amt'].resample('W').sum().median()
+    median_weekly_debit_count = int(df_final['debit_count'].resample('W').sum().median())
+    median_weekly_credit_count = int(df_final['credit_count'].resample('W').sum().median())
+    median_weekly_balance = df_final['balance'].resample('W').sum().median()
+    #weekly_dev_stats
+    dev_weekly_debit = df_final['debit_amt'].resample('W').sum().std()
+    dev_weekly_credit = df_final['credit_amt'].resample('W').sum().std()
+    dev_weekly_debit_count = int(df_final['debit_count'].resample('W').sum().std())
+    dev_weekly_credit_count = int(df_final['credit_count'].resample('W').sum().std())
+    dev_weekly_balance = df_final['balance'].resample('W').sum().std()
     return [avg_daily_debit, avg_daily_credit, avg_daily_debit_count, avg_daily_credit_count, avg_daily_balance,
+            median_daily_debit, median_daily_credit, median_daily_debit_count, median_daily_credit_count, median_daily_balance,
+            dev_daily_debit, dev_daily_credit, dev_daily_debit_count, dev_daily_credit_count, dev_daily_balance,
             avg_weekly_debit, avg_weekly_credit, avg_weekly_debit_count, avg_weekly_credit_count, avg_weekly_balance,
+            median_weekly_debit, median_weekly_credit, median_weekly_debit_count, median_weekly_credit_count, median_weekly_balance,
+            dev_weekly_debit, dev_weekly_credit, dev_weekly_debit_count, dev_weekly_credit_count, dev_weekly_balance,
             loan_id]
 
 
@@ -244,12 +275,32 @@ def fe_bank_reports(df):
                                2 : 'avg_daily_debit_count', 
                                3 : 'avg_daily_credit_count', 
                                4 : 'avg_daily_balance',
-                               5 : 'avg_weekly_debit', 
-                               6 : 'avg_weekly_credit', 
-                               7 : 'avg_weekly_debit_count', 
-                               8 : 'avg_weekly_credit_count', 
-                               9 : 'avg_weekly_balance',
-                               10 : 'loan_id'}, inplace = True)
+                               5 : 'median_daily_debit', 
+                               6 : 'median_daily_credit', 
+                               7 : 'median_daily_debit_count', 
+                               8 : 'median_daily_credit_count', 
+                               9 : 'median_daily_balance',
+                               10 : 'dev_daily_debit', 
+                               11 : 'dev_daily_credit', 
+                               12 : 'dev_daily_debit_count', 
+                               13 : 'dev_daily_credit_count', 
+                               14 : 'dev_daily_balance',
+                               15 : 'avg_weekly_debit', 
+                               16 : 'avg_weekly_credit', 
+                               17 : 'avg_weekly_debit_count', 
+                               18 : 'avg_weekly_credit_count', 
+                               19 : 'avg_weekly_balance',
+                               20 : 'median_weekly_debit', 
+                               21 : 'median_weekly_credit', 
+                               22 : 'median_weekly_debit_count', 
+                               23 : 'median_weekly_credit_count', 
+                               24 : 'median_weekly_balance',
+                               25 : 'dev_weekly_debit', 
+                               26 : 'dev_weekly_credit', 
+                               27 : 'dev_weekly_debit_count', 
+                               28 : 'dev_weekly_credit_count', 
+                               29 : 'dev_weekly_balance',
+                               30 : 'loan_id'}, inplace = True)
     df = pd.merge(df, df_stats, how = 'left', on = 'loan_id')
 
     df_balance_vars = pd.DataFrame()

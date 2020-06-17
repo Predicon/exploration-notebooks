@@ -37,3 +37,8 @@ def preprocess_bank_app(df):
     df['dti'] = df['dti'].map(dti_outlier_treat)
     df.replace({'in1_is_direct_deposite': {'': 'Unknown'}}, inplace = True)
     return df
+
+def changing_bool_dtypes_to_str(df):
+    bool_cols = df.select_dtypes(include = ['bool']).columns
+    df[bool_cols] = df[bool_cols].astype(str)
+    return df

@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.impute import SimpleImputer
-#from sklearn_pandas import CategoricalImputer
+from sklearn_pandas import CategoricalImputer
 
 def esisgn_outlier_treat(x):
     """Removes outliers 
@@ -76,10 +76,23 @@ def impute_esign(df):
     df[['AccessCount']] = imp_acc_count.transform(df[['AccessCount']])
     return df, imp_acc_count
 
-def impute_bankapp(df):
+def impute_bankapp (df):
     imp_dti = impute(df, ['dti'], 'median')
     imp_pay_day = impute(df, ['pay_day_test_result_amount'], 'median')
     df[['dti']] = imp_dti.transform(df[['dti']])
     df[['pay_day_test_result_amount']] = imp_pay_day.transform(df[['pay_day_test_result_amount']])
     return df, imp_dti, imp_pay_day
+
+def impute_learning(df, testing_set = False):
+    if testing_set:
+        df['LeadProvider'].fillna('freedom', inplace = True)
+        return df
+    df['LeadProvider'].fillna('freedom', inplace = True)
+    imp_acc_count = impute(df, ['AccessCount'], 'median')
+    df[['AccessCount']] = imp_acc_count.transform(df[['AccessCount']])
+    imp_dti = impute(df, ['dti'], 'median')
+    imp_pay_day = impute(df, ['pay_day_test_result_amount'], 'median')
+    df[['dti']] = imp_dti.transform(df[['dti']])
+    df[['pay_day_test_result_amount']] = imp_pay_day.transform(df[['pay_day_test_result_amount']])
+    return df, imp_acc_count, imp_dti, imp_pay_day
 
