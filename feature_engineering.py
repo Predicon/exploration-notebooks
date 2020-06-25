@@ -4,6 +4,7 @@ import multiprocessing as mp
 import re
 import joblib
 import numpy as np
+import json
 
 
 
@@ -154,6 +155,16 @@ def create_lender_vars(loanid,report_string,time_added,pr_acct):
 
 
 def get_transaction_time_series(primary_account, bank_report, loan_id):
+    """Compute transactions of each day with the dates in timeseries format.
+
+    Args:
+    loan_id (float)
+    bank_report (str)
+    primary_acct (str)
+
+    Returns:
+    df_txns(pandas dataframe):
+    """
     df_checking_txns = fetch_checking_acct_txns(bank_report)
     if df_checking_txns.empty is False:
         df_txns = df_checking_txns.loc[df_checking_txns['account_number']==primary_account, :]
@@ -163,6 +174,16 @@ def get_transaction_time_series(primary_account, bank_report, loan_id):
 
 
 def daily_txn_summary(primary_account, bank_report, loan_id):
+    """Compute the debit and credit summary statistics from the daily transactions.
+
+    Args:
+    loan_id (float)
+    bank_report (str)
+    primary_acct (str)
+
+    Returns:
+    list_of_statistics(list):
+    """
     df = get_transaction_time_series(primary_account, bank_report, loan_id)
     df_debit = df[(df['LoanId'] == loan_id) & (df['account_number'] == primary_account) & (df['amount'] < 0)]
     df_credit = df[(df['LoanId'] == loan_id) & (df['account_number'] == primary_account) & (df['amount'] >= 0)]
@@ -311,5 +332,56 @@ def fe_bank_reports(df):
     
     return df   
 
+def get_income_variability(json_string, loan_id):
+    """
+    Compute the various properties of the variation in income
 
+    Args:
+    loan_id : LoanId
+    json : bank report json data
+    Returns:
+    list : conatains LoanId and respective statistical properties of the variation in income
+    """
+    try:
+        amount_review = pd.DataFrame(json.loads(json_string)['incomeReview']['data']['sources'][0]['records'])
+        amount_review['date'] = pd.to_datetime(amount_review['date'])
+        if amount_review.amount.dtypes == 'O':
+            amount_review['amount'] = amount_review['amount'].map(lambda x : x.replace(',', ''))
+            amount_review['amount'] = pd.to_numeric(amount_review['amount'])
 
+        if amount_review['amount'].idxmin() == 0:
+            is_latest_sal_least = 'Yes'
+        else:
+            is_latest_sal_least = 'No'
+
+        rolling_mean = amount_review[['amount']].rolling(window = 2, min_periods = 1).mean().iloc[1:, :].mean().values[0]
+            
+        if (amount_review['amount'].values[0] == amount_review['amount'].values).all():
+            is_sal = 'const'
+                
+        elif amount_review['amount'].is_monotonic_increasing:
+            is_sal = 'decreasing'
+                
+        elif (amount_review['amount'].is_monotonic_decreasing == False) & (amount_review['amount'].is_monotonic_increasing == False):
+            is_sal = 'irregular' 
+                
+        else:
+            is_sal = 'increasing'
+
+        overall_sal_flux = np.round(amount_review[::-1].reset_index(drop = True)['amount'].diff().sum(), 2)
+
+        return [loan_id, is_latest_sal_least, rolling_mean, is_sal, overall_sal_flux]
+    except:
+        return np.zeros(5)
+
+def fe_bank_app(df):
+    df = df.loc[df['json'].notnull(), :].reset_index(drop = True)
+
+    with mp.Pool(processes = NCPU) as pool:
+        inc_var_temp = pool.starmap(get_income_variability, zip(df['json'], df['loan_id']))
+
+    df_inc_vars = pd.DataFrame(inc_var_temp, columns = ['loan_id', 'is_latest_sal_least', 'rolling_sal_mean', 'income_type', 'net_sal_change'])
+
+    df = pd.merge(df, df_inc_vars, how = 'left', on = 'loan_id')
+
+    return df

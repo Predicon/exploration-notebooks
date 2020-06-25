@@ -33,6 +33,8 @@ def preprocess_esign(df):
 
 
 def preprocess_bank_app(df):
+    df = df.drop_duplicates('loan_id')
+    df['loan_id'] = df['loan_id'].map(lambda x : re.compile('[^0-9]').sub('', x))
     df.rename(columns = {"final_decision":"bank_app_decision","dti_percentage":"dti"}, inplace = True)
     df['dti'] = df['dti'].map(dti_outlier_treat)
     df.replace({'in1_is_direct_deposite': {'': 'Unknown'}}, inplace = True)

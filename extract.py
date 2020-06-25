@@ -23,9 +23,13 @@ def fetch_bank_app_loans(start,end):
                   l.final_decision,
                   l.reasons_for_decision,
                   l.entered_date,
+                  l.json,
                   lv.dti_percentage,
                   lv.in1_is_direct_deposite,
                   lv.pay_day_test_result_amount,
+                  lv.in1_income_cycle,
+                  lv.in2_income_cycle,
+                  lv.missing_loan_payment,
                   lv.is_pds_history_found
 
                   from loan l

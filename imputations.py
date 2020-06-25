@@ -52,7 +52,7 @@ def impute(df, cols, strategy):
     
     imp_mean = SimpleImputer(missing_values = np.nan, strategy = 'mean')
     imp_median = SimpleImputer(missing_values = np.nan, strategy = 'median')
-    imp_mode = CategoricalImputer(missing_values = np.nan, strategy = 'most_frequent')
+    imp_mode = CategoricalImputer(missing_values = np.nan)
     
     if strategy == 'mean':
         imp_mean.fit(df[cols])
@@ -60,7 +60,7 @@ def impute(df, cols, strategy):
     elif strategy == 'median':
         imp_median.fit(df[cols])
         return imp_median
-    elif strategy == 'most_frequent':
+    elif strategy == 'mode':
         imp_mode.fit(df[cols])
         return imp_mode
     else:
@@ -79,9 +79,21 @@ def impute_esign(df):
 def impute_bankapp (df):
     imp_dti = impute(df, ['dti'], 'median')
     imp_pay_day = impute(df, ['pay_day_test_result_amount'], 'median')
+    imp_in1_cycle = impute(df, 'in1_income_cycle', 'mode')
+    imp_miss_loan_pay = impute(df, ['missing_loan_payment'], 'median')
+    imp_is_latest_sal_least = impute(df, 'is_latest_sal_least', 'mode')
+    imp_rolling_sal = impute(df, ['rolling_sal_mean'], 'median')
+    imp_income_type = impute(df, 'income_type', 'mode')
+    imp_net_sal_change = impute(df, ['net_sal_change'], 'median')
     df[['dti']] = imp_dti.transform(df[['dti']])
     df[['pay_day_test_result_amount']] = imp_pay_day.transform(df[['pay_day_test_result_amount']])
-    return df, imp_dti, imp_pay_day
+    df[['in1_income_cycle']] = imp_in1_cycle.transform(df[['in1_income_cycle']])
+    df[['missing_loan_payment']] = imp_miss_loan_pay.transform(df[['missing_loan_payment']])
+    df[['is_latest_sal_least']] = imp_is_latest_sal_least.transform(df[['is_latest_sal_least']])
+    df[['rolling_sal_mean']] = imp_rolling_sal.transform(df[['rolling_sal_mean']])
+    df[['income_type']] = imp_income_type.transform(df[['income_type']])
+    df[['net_sal_change']] = imp_net_sal_change.transform(df[['net_sal_change']])
+    return df, imp_dti, imp_pay_day, imp_in1_cycle, imp_miss_loan_pay, imp_is_latest_sal_least, imp_rolling_sal, imp_income_type, imp_net_sal_change
 
 def impute_learning(df, testing_set = False):
     if testing_set:
