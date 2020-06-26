@@ -3,8 +3,6 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 import missingno as msno
-import numba
-from numba import types
 
 def intitial_eda_checks(df):
     """
@@ -31,8 +29,8 @@ def intitial_eda_checks(df):
         print('No NaN found.')
         return 0
 
-def counting_unique_values(df):
-    """Checks if there are any columns with only one unique value
+def counting_unique_values_cat(df):
+    """Checks if there are any categorical columns with only one unique value
 
     Args:
         df (pandas df): dataframe consisting all the features and target
@@ -43,10 +41,27 @@ def counting_unique_values(df):
     cat_cols = df.select_dtypes(include = ['object']).columns.values
     def count_uniq(x):
         if x.nunique() == 1:
-            return x
+            return x.name
 
-    cols_with_less_than_one_uniq = [x for x in df[cat_cols].apply(count_uniq).values if x != None]
-    return cols_with_less_than_one_uniq
+    cat_cols_with_one_uniq = [x for x in df[cat_cols].apply(count_uniq).values if x != None]
+    return cat_cols_with_one_uniq
+
+def counting_unique_values_num(df):
+    """Checks if there are any numeric columns with only one unique value
+
+    Args:
+        df (pandas df): dataframe consisting all the features and target
+
+    Returns:
+        list: all columns having only 1 unique value
+    """
+    num_cols = df.select_dtypes(include = [np.number]).columns.values
+    def count_uniq(x):
+        if x.nunique() == 1:
+            return x.name
+
+    num_cols_with_one_uniq = [x for x in df[num_cols].apply(count_uniq).values if x != None]
+    return num_cols_with_one_uniq
 
     
 def histograms_numeric_columns(df):
@@ -57,8 +72,10 @@ def histograms_numeric_columns(df):
     Returns:
     seaborn plot object
     """
-    numerical_columns = df.select_dtypes(include = [np.number]).columns.values
-    f = pd.melt(df, value_vars = numerical_columns) 
+    num_cols = df.select_dtypes(include = [np.number]).columns.values
+    cols_to_plot = [x for x in num_cols if df[x].isnull().sum() != df.shape[0]]
+    df = df[cols_to_plot]
+    f = pd.melt(df, value_vars = cols_to_plot) 
     g = sns.FacetGrid(f, col = 'variable',  col_wrap = 4, sharex = False, sharey = False, height = 8, aspect = 1)
     g = g.map(sns.distplot, 'value')
     return g
@@ -71,8 +88,10 @@ def boxplot_numerical_columns(df):
     Returns:
     seaborn plot object
     """
-    numerical_columns = df.select_dtypes(include = [np.number]).columns.values
-    f = pd.melt(df, value_vars = numerical_columns) 
+    num_cols = df.select_dtypes(include = [np.number]).columns.values
+    cols_to_plot = [x for x in num_cols if df[x].isnull().sum() != df.shape[0]] 
+    df = df[cols_to_plot]
+    f = pd.melt(df, value_vars = cols_to_plot) 
     g = sns.FacetGrid(f, col = 'variable',  col_wrap = 4, sharex = False, sharey = False, height = 8, aspect = 1)
     g = g.map(sns.boxplot, 'value')
     return g 
