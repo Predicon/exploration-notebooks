@@ -100,6 +100,10 @@ def countplot_categorical_columns(df, force = False):
     """
     Calculates countplots of categorical columns having value counts > 1 and <= 13
     Args:
+    df(pandas df) : dataframe consisting all the features and target
+    force(bool) : whether to print the columns having more than 13 unique values or not
+    Returns:
+    seaborn plotted object
     """
 
     cat_cols = df.select_dtypes(include = ['object']).columns.values
