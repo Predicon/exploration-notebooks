@@ -96,7 +96,7 @@ def boxplot_numerical_columns(df):
     g = g.map(sns.boxplot, 'value')
     return g 
 
-def countplot_categorical_columns(df):
+def countplot_categorical_columns(df, force = False):
     """
     Calculates countplots of categorical columns having value counts > 1 and <= 13
     Args:
@@ -108,8 +108,10 @@ def countplot_categorical_columns(df):
             if len(x.value_counts()) > 1:
                 return x.name
 
-    cat_cols_to_plot = [x for x in df[cat_cols].apply(det_cat_col).values if x != None] 
-    #print(cat_cols_to_plot)
+    if force == False:
+        cat_cols_to_plot = [x for x in df[cat_cols].apply(det_cat_col).values if x != None] 
+    else:
+        cat_cols_to_plot = cat_cols
 
     def countplot(y, **kwargs):
         ax = sns.countplot(y = y)
