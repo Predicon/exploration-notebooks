@@ -106,30 +106,33 @@ def countplot_categorical_columns(df, force = False):
     seaborn plotted object
     """
 
-    cat_cols = df.select_dtypes(include = ['object']).columns.values
-    def det_cat_col(x):
-        if len(x.value_counts()) <= 13:
-            if len(x.value_counts()) > 1:
-                return x.name
+    try:
+        cat_cols = df.select_dtypes(include = ['object']).columns.values
+        def det_cat_col(x):
+            if len(x.value_counts()) <= 13:
+                if len(x.value_counts()) > 1:
+                    return x.name
 
-    if force == False:
-        cat_cols_to_plot = [x for x in df[cat_cols].apply(det_cat_col).values if x != None] 
-    else:
-        cat_cols_to_plot = cat_cols
+        if force == False:
+            cat_cols_to_plot = [x for x in df[cat_cols].apply(det_cat_col).values if x != None] 
+        else:
+            cat_cols_to_plot = cat_cols
 
-    def countplot(y, **kwargs):
-        ax = sns.countplot(y = y)
-        total = df.shape[0]
-        for p in ax.patches:
-            percentage = '{:.1f}%'.format(100 * p.get_width()/total)
-            x = p.get_x() + p.get_width() + 0.02
-            y = p.get_y() + p.get_height()/2
-            ax.annotate(percentage, (x, y))
+        def countplot(y, **kwargs):
+            ax = sns.countplot(y = y)
+            total = df.shape[0]
+            for p in ax.patches:
+                percentage = '{:.1f}%'.format(100 * p.get_width()/total)
+                x = p.get_x() + p.get_width() + 0.02
+                y = p.get_y() + p.get_height()/2
+                ax.annotate(percentage, (x, y))
 
-    f = pd.melt(df, value_vars = cat_cols_to_plot)
-    g = sns.FacetGrid(f, col='variable',  col_wrap=2, sharex=False, sharey=False, height=10)
-    g = g.map(countplot, 'value')
-    return g
+        f = pd.melt(df, value_vars = cat_cols_to_plot)
+        g = sns.FacetGrid(f, col='variable',  col_wrap=2, sharex=False, sharey=False, height=10)
+        g = g.map(countplot, 'value')
+        return g
+    except:
+        print("Too much values to handle....try setting force to True")
 
 def heatmap_numeric_w_dependent_variable(df, dependent_variable):
     """
