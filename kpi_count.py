@@ -48,9 +48,11 @@ def extract_funded_loans(iloans_conn):
         pandas df: dataframe containing required featurs fetched from iloans server
     """
     query_funded = '''
-                SELECT LoanId,
-                       LoanStatus,
-                       TimeAdded
+                SELECT 
+                    LoanId,
+                    LoanStatus,
+                    TimeAdded,
+                    (CASE when LoanStatus = 'Lender Approved' then 1 else 0 END) as LenderApproved
                 FROM view_FCL_Loan_History
                 WHERE TimeAdded >= '2020-06-09'
                '''
@@ -84,7 +86,6 @@ def modify_model_db(model_db):
         pandas df: Modified dataframe
     """
     model_db['LoanId'] = model_db['LoanId'].astype(str)
-    model_db.drop_duplicates('LoanId', inplace = True)
     model_db.drop('EsigTimeSignedDiff_In_SEC', axis = 1, inplace = True)
     model_db['TimeAdded'] = pd.to_datetime(model_db['TimeAdded'].map(lambda x : x.date()))
     model_db = model_db.loc[model_db['TimeAdded'] >= '2020-06-09', :].reset_index(drop = True)
@@ -108,6 +109,7 @@ def modify_fundedloans_db(fundedloans_db):
     fundedloans_db['LoanId'] = fundedloans_db['LoanId'].astype(int).astype(str)
     fundedloans_db['TimeAdded'] = fundedloans_db['TimeAdded'].dt.date
     fundedloans_db['TimeAdded'] = pd.to_datetime(fundedloans_db['TimeAdded'])
+    fundedloans_db = fundedloans_db.groupby('LoanId', as_index = False).sum()
     return fundedloans_db
 
 def get_kpi(modified_bankapp_db, modified_model_db, modified_fundedloans_db):
@@ -123,6 +125,15 @@ def get_kpi(modified_bankapp_db, modified_model_db, modified_fundedloans_db):
     """
     merged_db = pd.merge(pd.merge(modified_bankapp_db, modified_model_db, on = 'LoanId', how = 'left'), 
                                   modified_fundedloans_db, on = 'LoanId', how = 'left')
+    
+    def is_lender_approved(x):
+        if x > 0:
+            return 1
+        else:
+            return 0
+    
+    merged_db = merged_db.merge(merged_db['LenderApproved'].map(is_lender_approved).reset_index(drop = True).rename('isLenderApproved'), left_index = True, right_index = True)
+    
     #generating bankapp kpi metrics
     bankapp_agg = merged_db.groupby('entered_date', as_index = False)['manual_decision'].count()
     #generating model kpi metrics
@@ -131,9 +142,9 @@ def get_kpi(modified_bankapp_db, modified_model_db, modified_fundedloans_db):
     model_agg.drop('Decision', axis = 1, inplace = True)
     model_agg.rename(columns = {'Score_x' : '#positive_scored', 'Score_y' : '#model_scored'}, inplace = True)
     #generating funded loans kpi metrics
-    funded_agg = merged_db.groupby(['entered_date', 'LoanStatus'], as_index = False).count().loc[merged_db.groupby(['entered_date', 'LoanStatus'], as_index = False).count()['LoanStatus'] == 'Lender Approved', ['entered_date', 'LoanStatus', 'LoanId']].reset_index(drop = True)
+    funded_agg = merged_db.groupby('entered_date', as_index = False)['isLenderApproved'].sum()
     #combining all the metrics as one
     kpi = pd.merge(pd.merge(bankapp_agg, model_agg, on = 'entered_date', how = 'left'),
-                   funded_agg, on = 'entered_date', how = 'left').drop('LoanStatus', axis = 1)
+                   funded_agg, on = 'entered_date', how = 'left')
     kpi.rename(columns = {'LoanId' : '#Lender Approved'}, inplace = True)
     return kpi
