@@ -3,8 +3,9 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 import missingno as msno
+import ppscore as pps
 
-def intitial_eda_checks(df):
+def initial_eda_checks(df):
     """
     Checks for nulls in the passed Dataframe
     Args:
@@ -38,7 +39,7 @@ def counting_unique_values_cat(df):
     Returns:
         list: all columns having only 1 unique value
     """
-    cat_cols = df.select_dtypes(include = ['object']).columns.values
+    cat_cols = df.select_dtypes(include = ['object', 'bool']).columns.values
     def count_uniq(x):
         if x.nunique() == 1:
             return x.name
@@ -96,18 +97,22 @@ def boxplot_numerical_columns(df):
     g = g.map(sns.boxplot, 'value')
     return g 
 
-def countplot_categorical_columns(df, force = False):
+def countplot_categorical_columns(df, force = False, cols = None):
     """
     Calculates countplots of categorical columns having value counts > 1 and <= 13
     Args:
     df(pandas df) : dataframe consisting all the features and target
     force(bool) : whether to print the columns having more than 13 unique values or not
+    cols(list) : list of columns whose countplot is to be fetched. If None, then all psooible columns are taken.
     Returns:
     seaborn plotted object
     """
 
     try:
-        cat_cols = df.select_dtypes(include = ['object']).columns.values
+        cat_cols = df[cols].select_dtypes(include = ['object', 'bool']).columns.values
+    except:
+        cat_cols = df.select_dtypes(include = ['object', 'bool']).columns.values
+    try:
         def det_cat_col(x):
             if len(x.value_counts()) <= 13:
                 if len(x.value_counts()) > 1:
@@ -151,7 +156,27 @@ def heatmap_numeric_w_dependent_variable(df, dependent_variable):
                     vmax = 1) 
     return g
 
-def dendrogram(df):
+
+def get_pps(df, dependent_variable):
+    """
+    Calculates the PPS score between all the features and the target
+    Args:
+    df(pandas dataframe) : The dataframe consisting the whole dataset along with the new feature
+    target(string) : Name of the target, as in the dataframe
+    Returns:
+    array of dict : An array of dictionary in which each element of the array is a dictionary representing the complete pps
+    procedure of each feature wrt target
+    """
+    
+    # pps score
+    pps_feat_tar = {}
+    for feature in df.drop([dependent_variable], axis = 1).columns:
+        pps_feat_tar[feature] = pps.score(df, feature, dependent_variable)['ppscore']
+        
+    return pd.DataFrame(pps_feat_tar.items(), columns = ['Features', 'PPS scores'])
+    
+
+'''def dendrogram(df):
     """
     Calcuates the hierarchial relationship between features
     Args:
@@ -160,4 +185,8 @@ def dendrogram(df):
     g(plotted object)
     """
     g = msno.dendrogram(df)
-    return g
+    return g'''
+
+'''def nullity_heatmap(df):
+    g = msno.heatmap(df)
+    return g'''
