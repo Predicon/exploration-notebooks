@@ -1,0 +1,52 @@
+Fetching data:
+1>Bank Report:
+Fetch all bank reports from GetCredit between 7th Jan to 7th Feb for Freedom Cash
+2>Bank App:
+To build the automation logic, we need the actual income which is recorded by the agents
+3>From each report, filter for checking account containing the max number of txns.(alias as primary account). Now, we will have a list of primary accounts for each report and their respective txns.
+4>From all primary accounts, filter those having more than 60 days of transaction.
+5>Now for all the txns in each account, filter those having amt > 0(credit txns)
+6>Now for each credit txn, check whether the txn category falls into any of 'Payroll' or 'Paycheck' or 'Income'. The output would be 1 or 0 depending on whether it has fallen into these 3 categories or not.
+7>Check if any of the memo from the credit txns for a particular account matches(use fuzzy match) with the employer name provided by the customer.
+8>If match, check whether the further txns with the same memo are at regular intervals.
+
+
+Pseudocode>
+->Fetch LoanId, BankReportId, BankReportData, EmployerName TimeAdded where Merchant Id is 15 or 18 between 7th Jan 2020 to 
+7th Feb 2020
+->Fetch loanid and json where there is an occurence of string like Production in the campaign between 7th Jan 2020 to 7th Feb 2020
+->Merge both on common loanids(merged df)
+->report<-json.load(banktransactionreport)
+for all acc in 'accounts' keys form report:
+     if acct type is checking and transactions are not empty do:
+                temp_df<-actt[txns]
+                temp_df<-acct_number
+        merge all temp_df
+        return temp_df
+->for each datetime wise trasaction do:
+        count(no of transaction for account)
+        return the account with max txn
+->for each primary account do:
+    sort by posted_date
+    first = latest posted_date
+    last  = last posted_date
+    if (last - first) days >= 60:
+    return True 
+->for each account do:
+    df<-get all checking transactions
+    df <- all account txns from df which have account_number as           primary_account
+    credit_txn <- df[amt>0]
+->for each credit_txn do:
+    return 1 if txn in list
+    else reuturn 0
+->memos <- unique(all available memos from each credit txn for a 		particular account)
+   emplname <- employer name from merged df
+   best_case<-fuzzy_match(emplname, memos)
+   best_memo<-best_case[0]
+->df_memo<-df[df[memo]==best_memo][['posted_date', 'amount']]
+  df_memo_diff<-df_memo['posted_date'].diff()
+  max_days <- value counts(df_memo_diff).idxmax().days
+  if max_days != 30 and no.of occurecne of max_days >= 3:
+	return 1
+  elif max_days == 30 and no.of occurence of max_days >= 2:
+	return 1   
