@@ -1,5 +1,7 @@
 import pandas as pd
 import utilities as util
+import numpy as np
+
 
 def preprocess_bankapp_db(bankapp_db):
     """Modifies bankapp data
@@ -46,3 +48,22 @@ def preprocess_loan_history_db(fundedloans_db):
     fundedloans_db = fundedloans_db.groupby('LoanId', as_index = False).sum()
     fundedloans_db['LenderApproved'] = fundedloans_db['LenderApproved'].map(util.is_lender_approved)
     return fundedloans_db
+
+def preprocess_lender_reject_sub_categories(df, cols):
+    
+    for i in cols:
+        try:
+            df[i] = df[i].map(lambda x : str(x)[:-1].split('x')[1][-1] if x != None else x)
+        except:
+            continue
+    no_sale_categories = pd.DataFrame([x for x in np.where(df == '1', df.columns,'').tolist() if len(x) > 0]).values
+    no_sale_categories = [x.tolist() for x in no_sale_categories]
+    no_sale = []
+    for x in no_sale_categories:
+        temp = []
+        for y in x:
+            if len(y) != 0:
+                temp.append(y)
+        no_sale.append(temp)
+    df = pd.merge(df, pd.DataFrame([' + '.join(x) for x in no_sale], columns = ['sub_category']), left_index = True, right_index = True)
+    return df[['LoanId', 'entered_date', 'underwriting_final_decision', 'sub_category', 'Decision', 'LenderApproved']]
