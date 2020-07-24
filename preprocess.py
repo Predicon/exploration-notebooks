@@ -3,51 +3,59 @@ import utilities as util
 import numpy as np
 
 
-def preprocess_bankapp_db(bankapp_db):
+def preprocess_bankapp_db(df):
     """Modifies bankapp data
 
     Args:
-        bankapp_db (pandas df): Dataframe consisting all the required columns from bankapp
+        df (pandas df): Dataframe consisting all the required columns from bankapp
 
     Returns:
         pandas df: Modified dataframe
     """
-    bankapp_db = bankapp_db.drop_duplicates('LoanId')
+    df = df.drop_duplicates('LoanId')
     rename_columns = {'final_decision':'agent_decision'}
-    bankapp_db.rename(columns = rename_columns, inplace = True)
-    bankapp_db['entered_date'] = pd.to_datetime(bankapp_db['entered_date'])
-    return bankapp_db
+    df.rename(columns = rename_columns, inplace = True)
+    df['entered_date'] = pd.to_datetime(df['entered_date'])
+    is_BV_uncertain_approved = df['agent_decision'].isin(['Bank Validation Uncertain', 'Bank Validation Approved'])
+    df = df[is_BV_uncertain_approved]
+    return df
 
-def preprocess_model_db(model_db):
+def preprocess_model_db(df):
     """Modifies Model scored data
 
     Args:
-        model_db (pandas df): Dataframe consisting all the required columns from predicon model database
+        df (pandas df): Dataframe consisting all the required columns from predicon model database
 
     Returns:
         pandas df: Modified dataframe
     """
-    model_db['LoanId'] = model_db['LoanId'].astype(str)
-    model_db['TimeAdded'] = pd.to_datetime(model_db['TimeAdded'].map(lambda x : x.date()))
-    model_db = model_db.loc[model_db['TimeAdded'] >= '2020-06-09', :].reset_index(drop = True)
-    model_db = model_db.merge(model_db['Score'].map(util.pos).reset_index(drop = True).rename('Decision'), left_index = True, right_index = True)
-    return model_db[['LoanId', 'Decision']]
+    df['LoanId'] = df['LoanId'].astype(str)
+    df['TimeAdded'] = pd.to_datetime(df['TimeAdded'].map(lambda x : x.date()))
+    df = df.loc[df['TimeAdded'] >= '2020-06-09', :].reset_index(drop = True)
+    df = df.merge(df['Score'].map(util.pos).reset_index(drop = True).rename('Decision'), left_index = True, right_index = True)
+    return df[['LoanId', 'Decision']]
 
-def preprocess_loan_history_db(fundedloans_db):
+def preprocess_loan_history_db(df):
     """Modifies Funded Loans data
 
     Args:
-        fundedloans_db (pandas df): Dataframe consisting all the required columns from funded loans database
+        df (pandas df): Dataframe consisting all the required columns from funded loans database
 
     Returns:
         pandas df: Modified dataframe
     """
-    fundedloans_db['LoanId'] = fundedloans_db['LoanId'].astype(int).astype(str)
-    fundedloans_db['TimeAdded'] = fundedloans_db['TimeAdded'].dt.date
-    fundedloans_db['TimeAdded'] = pd.to_datetime(fundedloans_db['TimeAdded'])
-    fundedloans_db = fundedloans_db.groupby('LoanId', as_index = False).sum()
-    fundedloans_db['LenderApproved'] = fundedloans_db['LenderApproved'].map(util.is_lender_approved)
-    return fundedloans_db
+    df['LoanId'] = df['LoanId'].astype(int).astype(str)
+    df['TimeAdded'] = df['TimeAdded'].dt.date
+    df['TimeAdded'] = pd.to_datetime(df['TimeAdded'])
+    df = df.groupby('LoanId', as_index = False).sum()
+    df['LenderApproved'] = df['LenderApproved'].map(util.is_lender_approved)
+    return df
+
+def preprocess_loan_performance(df):
+    df['LoanId'] = df['LoanId'].astype(int).astype(str)
+    df['IsFirstDefault'] = df['IsFirstDefault'].astype(str)
+    return df
+    
 
 def preprocess_lender_reject_sub_categories(df, cols):
     
@@ -66,5 +74,5 @@ def preprocess_lender_reject_sub_categories(df, cols):
                 temp.append(y)
         no_sale.append(temp)
     df = pd.merge(df, pd.DataFrame([' + '.join(x) for x in no_sale], columns = ['sub_category']), left_index = True, right_index = True)
-    return df[['LoanId', 'entered_date', 'underwriting_final_decision', 'sub_category', 'Decision', 'LenderApproved']]
+    return df[['LoanId', 'entered_date', 'underwriting_final_decision', 'sub_category', 'Decision', 'LenderApproved', 'IsFirstDefault']]
 
