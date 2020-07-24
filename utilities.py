@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(0, '/home/vishal/kpi/exploration-notebooks')
-import EDA as eda
+
 import pandas as pd
 
 def is_lender_approved(x):

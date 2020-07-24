@@ -67,3 +67,4 @@ def preprocess_lender_reject_sub_categories(df, cols):
         no_sale.append(temp)
     df = pd.merge(df, pd.DataFrame([' + '.join(x) for x in no_sale], columns = ['sub_category']), left_index = True, right_index = True)
     return df[['LoanId', 'entered_date', 'underwriting_final_decision', 'sub_category', 'Decision', 'LenderApproved']]
+

@@ -64,7 +64,7 @@ def extract_loan_history(start, end = str(date.today())):
     Returns:
         pandas df: dataframe containing required featurs fetched from iloans server
     """
-    query_funded = f'''
+    query = f'''
                 SELECT 
                     LoanId,
                     LoanStatus,
@@ -73,5 +73,22 @@ def extract_loan_history(start, end = str(date.today())):
                 FROM view_FCL_Loan_History
                 WHERE TimeAdded >= {start}
                '''
-    funded_loans = q.iloans(query_funded)
+    approved_loans = q.iloans(query)
+    return approved_loans
+
+def extract_performance(start, end = str(date.today())):
+
+
+    query = f'''
+             SELECT LoanId,
+                    IsFirstDefault
+            FROM view_FCL_Loan
+            WHERE LeadTimeAdded >= {start}
+            AND IsFirstDefault IS not null
+            '''
+    funded_loans = q.iloans(query)
     return funded_loans
+
+    
+    
+
