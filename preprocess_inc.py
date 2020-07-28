@@ -1,10 +1,5 @@
-import sys
-sys.path.insert(0, '/home/shared/utils')
-sys.path.insert(0, '/home/vishal/refactoring_pipeline')
 from helper import parse_dates
-import query as q
 import pandas as pd
-import json
 
 
 def preprocess_bank_reports(df):
