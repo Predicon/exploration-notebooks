@@ -1,13 +1,14 @@
-from helper import parse_dates
+#from helper import parse_dates
 import pandas as pd
 import json
-from functools import reduce
-from operator import add
+#from functools import reduce
+#from operator import add
 from fuzzywuzzy import fuzz, process
+from sklearn.metrics import confusion_matrix as cm
 
 
 
-def fetch_checking_acct_txns(json_string, loanid, employer_name):
+'''def fetch_checking_acct_txns(json_string, loanid, employer_name):
     """
     Parse all checking account transactions in the bank report
     
@@ -38,11 +39,11 @@ def fetch_checking_acct_txns(json_string, loanid, employer_name):
     
     if 'pending' in df_txn.columns:
         df_txn = df_txn[df_txn['pending'] == False]
-    return df_txn
+    return df_txn[['LoanId', 'EmployerName']]
 
 
 def get_ground_truth_income(json_string, loanid):
-    """Returns all the actual incomes as identified by the bankapp ageents
+    """Returns all the actual incomes as identified by the bankapp agents
 
     Args:
         json_string (json): information entered by bankapp agents
@@ -84,8 +85,48 @@ def check_if_employer_name_isin_txns(json_string, loan_id, employer_name):
         memos = list(txns['memo'].values)
         res = process.extractBests(employer_name.lower(), memos)
         top_score = res[0][1]
-        txn_memo = list(set([x[0] for x in res if x[1] == top_score if top_score >= 50]))
+        txn_memo = list(set([x[0] for x in res if top_score >= 50]))
         return txns[txns['memo'].isin(txn_memo)].reset_index(drop = True)[['LoanId', 'account_number', 'posted_date',
                                                                            'amount', 'memo', 'category', 'EmployerName']]
     except:
+        pass'''
+
+def fetch_txns_above_50_from_bankapp(json_string, loanid, employer_name, account):
+    """Get all the txns returned by the api to bankapp
+
+    Args:
+        json_string (json): json containing bankapp results
+        loanid (str): Loan id of applicant
+        employer_name (str): company in which the applicant works
+        account (str): account to be screen for
+
+    Returns:
+        [pandas df]: all the txns above some threshold from bankapp
+    """
+    try:
+        cred_txns = json.loads(json_string)['incomeReview']['data']['incomeTransactions']
+        df_credit_txns = pd.DataFrame(cred_txns)
+        df_credit_txns['account_number'] = account
+        df_credit_txns['LoanId'] = loanid
+        df_credit_txns['EmployerName'] = employer_name
+        df_credit_txns.rename(columns = {'postedDate' : 'posted_date'}, inplace = True)
+        df_credit_txns['posted_date'] = pd.to_datetime(df_credit_txns['posted_date'])
+        return df_credit_txns
+    except:
         pass
+
+
+def is_hit_or_miss(row):
+    """custom function to check if a string is present in a text using fuzzy match approach
+
+    Args:
+        row (pandas series): [description]
+
+    Returns:
+        [bool]: whether the match was good or bad
+    """
+    score = fuzz.WRatio(row['EmployerName'].lower(), row['memo'])
+    if score > 50:
+        return True
+    else:
+        return False
