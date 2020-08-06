@@ -26,7 +26,7 @@ def initial_eda_checks(df):
     
         #print(f'Total and Percentage of NaN:\n {missing_data}')
         return pd.DataFrame(missing_data), g
-    else: 
+    else:
         print('No NaN found.')
         return 0
 

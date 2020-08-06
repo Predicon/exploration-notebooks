@@ -6,7 +6,7 @@ import joblib
 sys.path.insert(0,os.getcwd())
 sys.path.insert(0,'/home/shared/utils')
 
-from db_utils import *
+import query as q
 
 
 def fetch_bank_app_loans(start,end):
@@ -39,9 +39,8 @@ def fetch_bank_app_loans(start,end):
                   and STR_TO_DATE(entered_date ,'%m/%d/%Y') >= STR_TO_DATE({start},'%Y-%m-%d')
                   and STR_TO_DATE(entered_date ,'%m/%d/%Y') <= STR_TO_DATE({end},'%Y-%m-%d')
                '''
-    bank_app_conn = get_bank_app_conn()
     
-    df = pd.read_sql_query(query, con = bank_app_conn)
+    df = q.bankapp(query)
     return df
 
 
@@ -76,9 +75,8 @@ def fetch_funded_mature_loans(start,end):
                 and LN.IsFirstDefault IS NOT NULL
                 and LN.MerchantId IN (15, 18)
                ''' 
-    iloans_conn = get_iloans_conn()
-    df = pd.read_sql_query(query,con = iloans_conn)
     
+    df = q.iloans(query)
     return df
 
 
@@ -109,8 +107,8 @@ def fetch_bank_reports(start,end):
                 and LN.IsFirstDefault IS NOT NULL
                 and LN.MerchantId IN (15, 18)
                 and GC.ReportStatus = 'COMPLETE' '''
-    iloans_conn = get_iloans_conn()
-    df = pd.read_sql_query(query,con = iloans_conn)
+    
+    df = q.iloans(query)
     
     return df
 
@@ -137,8 +135,7 @@ def get_esign_time_diff(start,end):
                 and LN.MerchantId IN (15, 18) 
             '''
     
-    iloans_conn = get_iloans_conn()
-    df = pd.read_sql_query(query,con=iloans_conn)
+    df = q.iloans(query)
     return df
 
 
@@ -192,9 +189,8 @@ def fetch_imputation_examples_bankapp(start_date, end_date):
                   and STR_TO_DATE(entered_date ,'%m/%d/%Y') >= STR_TO_DATE({start_date},'%Y-%m-%d')
                   and STR_TO_DATE(entered_date ,'%m/%d/%Y') <= STR_TO_DATE({end_date},'%Y-%m-%d')
                '''
-    bank_app_conn = get_bank_app_conn()
     
-    df = pd.read_sql_query(query, con = bank_app_conn)
+    df = q.bankapp(query)
     df = df.drop_duplicates('loan_id')
     return df.drop(['loan_id', 'entered_date'], axis = 1)
 
@@ -222,7 +218,6 @@ def fetch_imputation_examples_esign(start_date,end_date):
                 and LN.MerchantId IN (15, 18) 
             '''
     
-    iloans_conn = get_iloans_conn()
-    df = pd.read_sql_query(query,con=iloans_conn)
+    df = q.iloans(query)
     df = df.drop_duplicates('LoanId')
     return df.drop('LoanId', axis = 1)
